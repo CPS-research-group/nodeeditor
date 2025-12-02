@@ -369,6 +369,11 @@ QVariant DirectedAcyclicGraphModel::nodeData(NodeId nodeId, NodeRole role) const
     case NodeRole::Shape:
         result = static_cast<int>(_models.at(nodeId)->shape());
         break;
+
+    case NodeRole::ValidationState: {
+        auto validationState = model->validationState();
+        result = QVariant::fromValue(validationState);
+    } break;
     }
 
     return result;
@@ -431,6 +436,17 @@ bool DirectedAcyclicGraphModel::setNodeData(NodeId nodeId, NodeRole role, QVaria
 
     case NodeRole::Shape:
         break;
+
+    case NodeRole::ValidationState: {
+        if (value.canConvert<NodeValidationState>()) {
+            auto state = value.value<NodeValidationState>();
+            if (auto node = delegateModel<NodeDelegateModel>(nodeId); node != nullptr) {
+                node->setValidatonState(state);
+            }
+        }
+        Q_EMIT nodeUpdated(nodeId);
+        break;
+    }
     }
 
     return result;
