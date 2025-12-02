@@ -7,7 +7,6 @@
 #include "DefaultHorizontalNodeGeometry.hpp"
 #include "DefaultNodePainter.hpp"
 #include "DefaultVerticalNodeGeometry.hpp"
-#include "GraphicsView.hpp"
 #include "NodeGraphicsObject.hpp"
 
 #include <QUndoStack>
@@ -93,6 +92,11 @@ AbstractGraphModel &BasicGraphicsScene::graphModel()
     return _graphModel;
 }
 
+AbstractNodeGeometry const &BasicGraphicsScene::nodeGeometry() const
+{
+    return *_nodeGeometry;
+}
+
 AbstractNodeGeometry &BasicGraphicsScene::nodeGeometry()
 {
     return *_nodeGeometry;
@@ -116,6 +120,11 @@ void BasicGraphicsScene::setNodePainter(std::unique_ptr<AbstractNodePainter> new
 void BasicGraphicsScene::setConnectionPainter(std::unique_ptr<AbstractConnectionPainter> newPainter)
 {
     _connectionPainter = std::move(newPainter);
+}
+
+void BasicGraphicsScene::setNodeGeometry(std::unique_ptr<AbstractNodeGeometry> newGeom)
+{
+    _nodeGeometry = std::move(newGeom);
 }
 
 QUndoStack &BasicGraphicsScene::undoStack()
