@@ -8,6 +8,7 @@
 
 #include "Export.hpp"
 
+#include <optional>
 #include <QJsonObject>
 
 #include <memory>
