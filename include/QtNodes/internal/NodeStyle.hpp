@@ -34,6 +34,7 @@ public:
     QColor GradientColor2;
     QColor GradientColor3;
     QColor ShadowColor;
+    bool ShadowEnabled;
     QColor FontColor;
     QColor FontColorFaded;
 
@@ -42,6 +43,7 @@ public:
 
     QColor WarningColor;
     QColor ErrorColor;
+    QColor ToolTipIconColor;
 
     float PenWidth;
     float HoveredPenWidth;

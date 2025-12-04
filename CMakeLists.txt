@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.11)
 
 cmake_policy(SET CMP0072 NEW) # new in 3.11. The NEW behavior for this policy is to set OpenGL_GL_PREFERENCE to GLVND.
 cmake_policy(SET CMP0068 NEW) # new in 3.9. The NEW behavior of this policy is to ignore the RPATH settings for install_name on macOS.
@@ -12,6 +12,10 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 set(CMAKE_DISABLE_SOURCE_CHANGES  ON)
 set(OpenGL_GL_PREFERENCE LEGACY)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Enable AUTOMOC globally for all targets (needed for examples with Q_OBJECT)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 get_directory_property(_has_parent PARENT_DIRECTORY)
 if(_has_parent)
@@ -29,8 +33,6 @@ option(BUILD_SHARED_LIBS "Build as shared library" ON)
 option(BUILD_DEBUG_POSTFIX_D "Append d suffix to debug libraries" OFF)
 option(QT_NODES_FORCE_TEST_COLOR "Force colorized unit test output" OFF)
 option(USE_QT6 "Build with Qt6 (Enabled by default)" ON)
-
-enable_testing()
 
 if(QT_NODES_DEVELOPER_DEFAULTS)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
@@ -60,16 +62,6 @@ if (${QT_VERSION} VERSION_LESS 5.11.0)
   message(FATAL_ERROR "Requires qt version >= 5.11.0, Your current version is ${QT_VERSION}")
 endif()
 
-if (${QT_VERSION_MAJOR} EQUAL 6)
-  qt_add_resources(RESOURCES ./resources/resources.qrc)
-else()
-  qt5_add_resources(RESOURCES ./resources/resources.qrc)
-endif()
-
-# Unfortunately, as we have a split include/src, AUTOMOC doesn't work.
-# We'll have to manually specify some files
-set(CMAKE_AUTOMOC ON)
-
 set(CPP_SOURCE_FILES
   src/AbstractGraphModel.cpp
   src/AbstractNodeGeometry.cpp
@@ -97,6 +89,7 @@ set(CPP_SOURCE_FILES
   src/StyleCollection.cpp
   src/UndoCommands.cpp
   src/locateNode.cpp
+  resources/resources.qrc
 )
 
 set(HPP_HEADER_FILES
@@ -145,7 +138,6 @@ set(HPP_HEADER_FILES
 add_library(QtNodes
   ${CPP_SOURCE_FILES}
   ${HPP_HEADER_FILES}
-  ${RESOURCES}
 )
 
 add_library(QtNodes::QtNodes ALIAS QtNodes)
@@ -205,28 +197,6 @@ set_target_properties(QtNodes
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
-######
-# Moc
-##
-
-file(GLOB_RECURSE HEADERS_TO_MOC include/QtNodes/internal/*.hpp)
-
-if (${QT_VERSION_MAJOR} EQUAL 6)
-  qt_wrap_cpp(nodes_moc
-      ${HEADERS_TO_MOC}
-      TARGET QtNodes
-    OPTIONS --no-notes # Don't display a note for the headers which don't produce a moc_*.cpp
-  )
-else()
-  qt5_wrap_cpp(nodes_moc
-  ${HEADERS_TO_MOC}
-  TARGET QtNodes
-  OPTIONS --no-notes # Don't display a note for the headers which don't produce a moc_*.cpp
-  )
-endif()
-
-target_sources(QtNodes PRIVATE ${nodes_moc})
-
 ###########
 # Examples
 ##
@@ -242,9 +212,11 @@ endif()
 ##################
 # Automated Tests
 ##
+enable_testing()
+
 
 if(BUILD_TESTING)
-  #add_subdirectory(test)
+  add_subdirectory(test)
 endif()
 
 ###############
