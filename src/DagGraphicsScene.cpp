@@ -159,14 +159,16 @@ bool DagGraphicsScene::save(const QString &filePath, const QJsonObject &metadata
 
     QJsonObject sceneJson = _graphModel.save();
     // Merge metadata safely
-    for (auto it = metadata.begin(); it != metadata.end(); ++it) {
-        const QString &key = it.key();
-        const QJsonValue &value = it.value();
-        if (!value.isUndefined())
-            sceneJson[key] = value;
+    if (!metadata.isEmpty()) {
+        QJsonObject globals;
+        for (auto it = metadata.begin(); it != metadata.end(); ++it) {
+            if (!it.value().isUndefined())
+                globals[it.key()] = it.value();
+        }
+
+        if (!globals.isEmpty())
+            sceneJson["globals"] = globals;
     }
-    qInfo() << "metadata keys saved:" << metadata.keys();
-    qInfo() << "total keys saved:" << sceneJson.keys();
 
     file.write(QJsonDocument(sceneJson).toJson());
     file.close();
