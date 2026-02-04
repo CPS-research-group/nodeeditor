@@ -25,7 +25,7 @@ public:
     bool isBlank() const { return _graphModel.isEmpty(); }
 
 public Q_SLOTS:
-    bool save(const QString &filePath) const;
+    bool save(const QString &filePath, const QJsonObject &metadata = {}) const;
     bool load(const QString &filePath);
     void createNodeAt(const QString &name, const QPointF &pos);
 

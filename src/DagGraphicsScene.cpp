@@ -148,7 +148,7 @@ QMenu *DagGraphicsScene::createSceneMenu(QPointF const scenePos)
     return modelMenu;
 }
 
-bool DagGraphicsScene::save(const QString &filePath) const
+bool DagGraphicsScene::save(const QString &filePath, const QJsonObject &metadata) const
 {
     QFileInfo fileInfo(filePath);
     if (fileInfo.suffix().compare("dag", Qt::CaseInsensitive) != 0)
@@ -156,7 +156,21 @@ bool DagGraphicsScene::save(const QString &filePath) const
     QFile file(fileInfo.absoluteFilePath());
     if (!file.open(QIODevice::WriteOnly))
         return false;
-    file.write(QJsonDocument(_graphModel.save()).toJson());
+
+    QJsonObject sceneJson = _graphModel.save();
+    // Merge metadata safely
+    if (!metadata.isEmpty()) {
+        QJsonObject globals;
+        for (auto it = metadata.begin(); it != metadata.end(); ++it) {
+            if (!it.value().isUndefined())
+                globals[it.key()] = it.value();
+        }
+
+        if (!globals.isEmpty())
+            sceneJson["globals"] = globals;
+    }
+
+    file.write(QJsonDocument(sceneJson).toJson());
     file.close();
     return true;
 }
