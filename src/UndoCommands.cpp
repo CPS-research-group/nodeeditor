@@ -250,6 +250,7 @@ CopyCommand::CopyCommand(BasicGraphicsScene *scene)
     }
 
     QClipboard *clipboard = QApplication::clipboard();
+
     QByteArray const data = QJsonDocument(wrapper).toJson();
 
     QMimeData *mimeData = new QMimeData();

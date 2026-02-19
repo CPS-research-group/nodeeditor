@@ -2,7 +2,6 @@
 
 #include "BasicGraphicsScene.hpp"
 #include "ConnectionGraphicsObject.hpp"
-#include "DagGraphicsScene.hpp"
 #include "NodeGraphicsObject.hpp"
 #include "StyleCollection.hpp"
 #include "UndoCommands.hpp"
@@ -22,7 +21,6 @@
 #include <QtWidgets>
 
 #include <cmath>
-#include <QDir>
 
 using QtNodes::BasicGraphicsScene;
 using QtNodes::GraphicsView;
@@ -303,6 +301,7 @@ void GraphicsView::onDuplicateSelectedObjects()
     if (!nodeScene()) return; 
 
     QPointF const pastePosition = scenePastePosition();
+
     nodeScene()->undoStack().push(new CopyCommand(nodeScene()));
     nodeScene()->undoStack().push(new PasteCommand(nodeScene(), pastePosition));
 }
@@ -310,6 +309,7 @@ void GraphicsView::onDuplicateSelectedObjects()
 void GraphicsView::onCopySelectedObjects()
 {
     if (!nodeScene()) return; 
+
     nodeScene()->undoStack().push(new CopyCommand(nodeScene()));
 }
 
