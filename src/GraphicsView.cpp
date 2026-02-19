@@ -303,24 +303,14 @@ void GraphicsView::onDuplicateSelectedObjects()
     if (!nodeScene()) return; 
 
     QPointF const pastePosition = scenePastePosition();
-
-    QDir sourceDir;
-    if (auto dagScene = dynamic_cast<DagGraphicsScene *>(nodeScene())) {
-        sourceDir = dagScene->getDataDir();
-    }
-    nodeScene()->undoStack().push(new CopyCommand(nodeScene(), sourceDir));
-    nodeScene()->undoStack().push(new PasteCommand(nodeScene(), pastePosition, QDir()));
+    nodeScene()->undoStack().push(new CopyCommand(nodeScene()));
+    nodeScene()->undoStack().push(new PasteCommand(nodeScene(), pastePosition));
 }
 
 void GraphicsView::onCopySelectedObjects()
 {
     if (!nodeScene()) return; 
-
-    QDir sourceDir;
-    if (auto dagScene = dynamic_cast<DagGraphicsScene *>(nodeScene())) {
-        sourceDir = dagScene->getDataDir();
-    }
-    nodeScene()->undoStack().push(new CopyCommand(nodeScene(), sourceDir));
+    nodeScene()->undoStack().push(new CopyCommand(nodeScene()));
 }
 
 void GraphicsView::onPasteObjects()
@@ -328,7 +318,7 @@ void GraphicsView::onPasteObjects()
     if (!nodeScene()) return; 
 
     QPointF const pastePosition = scenePastePosition();
-    nodeScene()->undoStack().push(new PasteCommand(nodeScene(), pastePosition, QDir()));
+    nodeScene()->undoStack().push(new PasteCommand(nodeScene(), pastePosition));
 }
 
 void GraphicsView::keyPressEvent(QKeyEvent *event)

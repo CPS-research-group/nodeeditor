@@ -204,7 +204,9 @@ void DagGraphicsScene::createNodeAt(const QString &name, const QPointF &pos)
 
 QDir DagGraphicsScene::getDataDir() const
 {
-    return _dataDir;
+    if (_dataDir.exists())
+        return _dataDir;
+    return QDir();
 }
 
 void DagGraphicsScene::setDataDir(QDir const &dir)

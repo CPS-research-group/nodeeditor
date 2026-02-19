@@ -233,8 +233,7 @@ void offsetNodeGroup(QJsonObject &sceneJson, QPointF const &diff)
 
 //-------------------------------------
 
-CopyCommand::CopyCommand(BasicGraphicsScene *scene, QDir sourceDataDir)
-    : _sourceDataDir(sourceDataDir)
+CopyCommand::CopyCommand(BasicGraphicsScene *scene)
 {
     QJsonObject sceneJson = serializeSelectedItems(scene);
 
@@ -245,7 +244,10 @@ CopyCommand::CopyCommand(BasicGraphicsScene *scene, QDir sourceDataDir)
     // Wrap scene and sourceDir
     QJsonObject wrapper;
     wrapper["scene"] = sceneJson;
-    wrapper["sourceDir"] = _sourceDataDir.absolutePath();
+    if (auto dagScene = dynamic_cast<DagGraphicsScene *>(scene)) {
+        if (auto srcDir = dagScene->getDataDir(); srcDir.exists())
+            wrapper["sourceDir"] = srcDir.absolutePath();
+    }
 
     QClipboard *clipboard = QApplication::clipboard();
     QByteArray const data = QJsonDocument(wrapper).toJson();
@@ -264,12 +266,15 @@ CopyCommand::CopyCommand(BasicGraphicsScene *scene, QDir sourceDataDir)
 
 //-------------------------------------
 
-PasteCommand::PasteCommand(BasicGraphicsScene *scene, QPointF const &mouseScenePos, QDir const &)
+PasteCommand::PasteCommand(BasicGraphicsScene *scene, QPointF const &mouseScenePos)
     : _scene(scene)
     , _mouseScenePos(mouseScenePos)
 {
     QJsonObject wrapper = takeSceneJsonFromClipboard();
-    _sourceDataDir = QDir(wrapper["sourceDir"].toString());
+    // check if sourcDir key exists in wrapper
+    _sourceDataDir = QDir();
+    if (wrapper.contains("sourceDir"))
+        _sourceDataDir = QDir(wrapper["sourceDir"].toString());
     _newSceneJson = wrapper["scene"].toObject();
 
     if (_newSceneJson.empty() || _newSceneJson["nodes"].toArray().empty()) {
@@ -305,6 +310,7 @@ void PasteCommand::redo()
             QJsonObject obj = nodeVal.toObject();
             QJsonObject internalData = obj["internal-data"].toObject();
 
+            // check if data/function source model exists in the scene, to copy the files
             QString fileName;
             if (internalData.contains("data-name"))
                 fileName = internalData["data-name"].toString();

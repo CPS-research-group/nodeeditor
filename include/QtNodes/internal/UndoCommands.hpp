@@ -48,17 +48,13 @@ private:
 class NODE_EDITOR_PUBLIC CopyCommand : public QUndoCommand
 {
 public:
-    CopyCommand(BasicGraphicsScene *scene, QDir sourceDataDir);
-    QDir sourceDataDir() const { return _sourceDataDir; }
-
-private:
-    QDir _sourceDataDir; // store source data dir
+    CopyCommand(BasicGraphicsScene *scene);
 };
 
 class NODE_EDITOR_PUBLIC PasteCommand : public QUndoCommand
 {
 public:
-    PasteCommand(BasicGraphicsScene *scene, QPointF const &mouseScenePos, QDir const &sourceDataDir);
+    PasteCommand(BasicGraphicsScene *scene, QPointF const &mouseScenePos);
 
     void undo() override;
     void redo() override;
@@ -71,7 +67,7 @@ private:
     BasicGraphicsScene *_scene;
     QPointF const &_mouseScenePos;
     QJsonObject _newSceneJson;
-    QDir _sourceDataDir; // store source data dir
+    QDir _sourceDataDir; // source data dir for paste operation
 };
 
 class NODE_EDITOR_PUBLIC DisconnectCommand : public QUndoCommand
