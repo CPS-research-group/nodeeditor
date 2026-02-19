@@ -3,6 +3,7 @@
 #include "BasicGraphicsScene.hpp"
 #include "ConnectionGraphicsObject.hpp"
 #include "ConnectionIdUtils.hpp"
+#include "DagGraphicsScene.hpp"
 #include "Definitions.hpp"
 #include "NodeGraphicsObject.hpp"
 
@@ -232,7 +233,8 @@ void offsetNodeGroup(QJsonObject &sceneJson, QPointF const &diff)
 
 //-------------------------------------
 
-CopyCommand::CopyCommand(BasicGraphicsScene *scene)
+CopyCommand::CopyCommand(BasicGraphicsScene *scene, QDir sourceDataDir)
+    : _sourceDataDir(sourceDataDir)
 {
     QJsonObject sceneJson = serializeSelectedItems(scene);
 
@@ -240,10 +242,13 @@ CopyCommand::CopyCommand(BasicGraphicsScene *scene)
         setObsolete(true);
         return;
     }
+    // Wrap scene and sourceDir
+    QJsonObject wrapper;
+    wrapper["scene"] = sceneJson;
+    wrapper["sourceDir"] = _sourceDataDir.absolutePath();
 
     QClipboard *clipboard = QApplication::clipboard();
-
-    QByteArray const data = QJsonDocument(sceneJson).toJson();
+    QByteArray const data = QJsonDocument(wrapper).toJson();
 
     QMimeData *mimeData = new QMimeData();
     mimeData->setData("application/qt-nodes-graph", data);
@@ -259,11 +264,13 @@ CopyCommand::CopyCommand(BasicGraphicsScene *scene)
 
 //-------------------------------------
 
-PasteCommand::PasteCommand(BasicGraphicsScene *scene, QPointF const &mouseScenePos)
+PasteCommand::PasteCommand(BasicGraphicsScene *scene, QPointF const &mouseScenePos, QDir const &)
     : _scene(scene)
     , _mouseScenePos(mouseScenePos)
 {
-    _newSceneJson = takeSceneJsonFromClipboard();
+    QJsonObject wrapper = takeSceneJsonFromClipboard();
+    _sourceDataDir = QDir(wrapper["sourceDir"].toString());
+    _newSceneJson = wrapper["scene"].toObject();
 
     if (_newSceneJson.empty() || _newSceneJson["nodes"].toArray().empty()) {
         setObsolete(true);
@@ -288,6 +295,31 @@ void PasteCommand::redo()
 
     // Ignore if pasted in content does not generate nodes.
     try {
+        QDir targetDir;
+        if (auto dagScene = dynamic_cast<DagGraphicsScene *>(_scene)) {
+            targetDir = dagScene->getDataDir();
+        }
+
+        QJsonArray nodesJsonArray = _newSceneJson["nodes"].toArray();
+        for (auto nodeVal : nodesJsonArray) {
+            QJsonObject obj = nodeVal.toObject();
+            QJsonObject internalData = obj["internal-data"].toObject();
+
+            QString fileName;
+            if (internalData.contains("data-name"))
+                fileName = internalData["data-name"].toString();
+            else if (internalData.contains("saved_function"))
+                fileName = internalData["saved_function"].toString();
+
+            if (!fileName.isEmpty()) {
+                QString srcPath = _sourceDataDir.filePath(fileName);
+                QString targetPath = targetDir.filePath(fileName);
+
+                if (QFile::exists(srcPath) && !QFile::exists(targetPath)) {
+                    QFile::copy(srcPath, targetPath);
+                }
+            }
+        }
         insertSerializedItems(_newSceneJson, _scene);
     } catch (...) {
         // If the paste does not work, delete all selected nodes and connections

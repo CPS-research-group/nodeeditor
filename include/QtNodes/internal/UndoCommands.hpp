@@ -3,6 +3,7 @@
 #include "Definitions.hpp"
 #include "Export.hpp"
 
+#include <QDir>
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointF>
 #include <QUndoCommand>
@@ -47,13 +48,17 @@ private:
 class NODE_EDITOR_PUBLIC CopyCommand : public QUndoCommand
 {
 public:
-    CopyCommand(BasicGraphicsScene *scene);
+    CopyCommand(BasicGraphicsScene *scene, QDir sourceDataDir);
+    QDir sourceDataDir() const { return _sourceDataDir; }
+
+private:
+    QDir _sourceDataDir; // store source data dir
 };
 
 class NODE_EDITOR_PUBLIC PasteCommand : public QUndoCommand
 {
 public:
-    PasteCommand(BasicGraphicsScene *scene, QPointF const &mouseScenePos);
+    PasteCommand(BasicGraphicsScene *scene, QPointF const &mouseScenePos, QDir const &sourceDataDir);
 
     void undo() override;
     void redo() override;
@@ -66,6 +71,7 @@ private:
     BasicGraphicsScene *_scene;
     QPointF const &_mouseScenePos;
     QJsonObject _newSceneJson;
+    QDir _sourceDataDir; // store source data dir
 };
 
 class NODE_EDITOR_PUBLIC DisconnectCommand : public QUndoCommand

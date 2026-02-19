@@ -2,6 +2,7 @@
 
 #include "BasicGraphicsScene.hpp"
 #include "ConnectionGraphicsObject.hpp"
+#include "DagGraphicsScene.hpp"
 #include "NodeGraphicsObject.hpp"
 #include "StyleCollection.hpp"
 #include "UndoCommands.hpp"
@@ -21,6 +22,7 @@
 #include <QtWidgets>
 
 #include <cmath>
+#include <QDir>
 
 using QtNodes::BasicGraphicsScene;
 using QtNodes::GraphicsView;
@@ -302,15 +304,23 @@ void GraphicsView::onDuplicateSelectedObjects()
 
     QPointF const pastePosition = scenePastePosition();
 
-    nodeScene()->undoStack().push(new CopyCommand(nodeScene()));
-    nodeScene()->undoStack().push(new PasteCommand(nodeScene(), pastePosition));
+    QDir sourceDir;
+    if (auto dagScene = dynamic_cast<DagGraphicsScene *>(nodeScene())) {
+        sourceDir = dagScene->getDataDir();
+    }
+    nodeScene()->undoStack().push(new CopyCommand(nodeScene(), sourceDir));
+    nodeScene()->undoStack().push(new PasteCommand(nodeScene(), pastePosition, QDir()));
 }
 
 void GraphicsView::onCopySelectedObjects()
 {
     if (!nodeScene()) return; 
 
-    nodeScene()->undoStack().push(new CopyCommand(nodeScene()));
+    QDir sourceDir;
+    if (auto dagScene = dynamic_cast<DagGraphicsScene *>(nodeScene())) {
+        sourceDir = dagScene->getDataDir();
+    }
+    nodeScene()->undoStack().push(new CopyCommand(nodeScene(), sourceDir));
 }
 
 void GraphicsView::onPasteObjects()
@@ -318,7 +328,7 @@ void GraphicsView::onPasteObjects()
     if (!nodeScene()) return; 
 
     QPointF const pastePosition = scenePastePosition();
-    nodeScene()->undoStack().push(new PasteCommand(nodeScene(), pastePosition));
+    nodeScene()->undoStack().push(new PasteCommand(nodeScene(), pastePosition, QDir()));
 }
 
 void GraphicsView::keyPressEvent(QKeyEvent *event)
