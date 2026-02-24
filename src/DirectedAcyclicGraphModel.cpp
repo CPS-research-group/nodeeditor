@@ -168,7 +168,12 @@ bool DirectedAcyclicGraphModel::connectionPossible(ConnectionId const connection
     };
 
     return getDataType(PortType::Out).id == getDataType(PortType::In).id
-           && portVacant(PortType::Out) && portVacant(PortType::In) && !willBeCyclic(connectionId);
+           && portVacant(PortType::Out) && portVacant(PortType::In)
+#ifdef DB_ALLOW_CYCLIC_GRAPHS
+           ;
+#else
+           && !willBeCyclic(connectionId);
+#endif
 }
 
 void DirectedAcyclicGraphModel::addConnection(ConnectionId const connectionId)
@@ -189,7 +194,9 @@ void DirectedAcyclicGraphModel::addConnection(ConnectionId const connectionId)
                 PortRole::Data);
 
     // sanity check
+#ifndef DB_ALLOW_CYCLIC_GRAPHS
     isCyclic();
+#endif
 }
 
 void DirectedAcyclicGraphModel::sendConnectionCreation(ConnectionId const connectionId)
@@ -707,6 +714,10 @@ bool DirectedAcyclicGraphModel::isConnected() const
 
 void DirectedAcyclicGraphModel::onOutPortDataUpdated(NodeId const nodeId, PortIndex const portIndex)
 {
+    static bool inUpdate = false;
+    if (inUpdate)
+        return;
+    inUpdate = true;
     std::unordered_set<ConnectionId> const &connected = connections(nodeId,
                                                                     PortType::Out,
                                                                     portIndex);
@@ -716,6 +727,7 @@ void DirectedAcyclicGraphModel::onOutPortDataUpdated(NodeId const nodeId, PortIn
     for (auto const &cn : connected) {
         setPortData(cn.inNodeId, PortType::In, cn.inPortIndex, portDataToPropagate, PortRole::Data);
     }
+    inUpdate = false;
 }
 
 void DirectedAcyclicGraphModel::propagateEmptyDataTo(NodeId const nodeId, PortIndex const portIndex)
