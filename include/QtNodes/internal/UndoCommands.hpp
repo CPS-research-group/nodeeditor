@@ -4,9 +4,9 @@
 #include "Export.hpp"
 
 #include <QDir>
+#include <QUndoCommand>
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointF>
-#include <QUndoCommand>
 
 #include <unordered_set>
 
@@ -58,6 +58,9 @@ public:
 
     void undo() override;
     void redo() override;
+    void copyNodeDataFiles(const QJsonObject &sceneJson,
+                           const QDir &sourceDir,
+                           BasicGraphicsScene *scene);
 
 private:
     QJsonObject takeSceneJsonFromClipboard();

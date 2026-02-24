@@ -14,7 +14,6 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QGraphicsObject>
 
-
 namespace QtNodes {
 
 static QJsonObject serializeSelectedItems(BasicGraphicsScene *scene)
@@ -241,7 +240,7 @@ CopyCommand::CopyCommand(BasicGraphicsScene *scene)
         setObsolete(true);
         return;
     }
-    // Wrap scene and sourceDir
+    // For copy-paste data: include the data path (sourceDir) in the scene
     QJsonObject wrapper;
     wrapper["scene"] = sceneJson;
     if (auto dagScene = dynamic_cast<DagGraphicsScene *>(scene)) {
@@ -301,32 +300,7 @@ void PasteCommand::redo()
 
     // Ignore if pasted in content does not generate nodes.
     try {
-        QDir targetDir;
-        if (auto dagScene = dynamic_cast<DagGraphicsScene *>(_scene)) {
-            targetDir = dagScene->getDataDir();
-        }
-
-        QJsonArray nodesJsonArray = _newSceneJson["nodes"].toArray();
-        for (auto nodeVal : nodesJsonArray) {
-            QJsonObject obj = nodeVal.toObject();
-            QJsonObject internalData = obj["internal-data"].toObject();
-
-            // check if data/function source model exists in the scene, to copy the files
-            QString fileName;
-            if (internalData.contains("data-name"))
-                fileName = internalData["data-name"].toString();
-            else if (internalData.contains("saved_function"))
-                fileName = internalData["saved_function"].toString();
-
-            if (!fileName.isEmpty()) {
-                QString srcPath = _sourceDataDir.filePath(fileName);
-                QString targetPath = targetDir.filePath(fileName);
-
-                if (QFile::exists(srcPath) && !QFile::exists(targetPath)) {
-                    QFile::copy(srcPath, targetPath);
-                }
-            }
-        }
+        copyNodeDataFiles(_newSceneJson, _sourceDataDir, _scene);
         insertSerializedItems(_newSceneJson, _scene);
     } catch (...) {
         // If the paste does not work, delete all selected nodes and connections
@@ -341,6 +315,38 @@ void PasteCommand::redo()
         }
 
         setObsolete(true);
+    }
+}
+
+void PasteCommand::copyNodeDataFiles(const QJsonObject &sceneJson,
+                                     const QDir &sourceDir,
+                                     BasicGraphicsScene *scene)
+{
+    QDir targetDir;
+    if (auto dagScene = dynamic_cast<DagGraphicsScene *>(scene)) {
+        targetDir = dagScene->getDataDir();
+    }
+
+    QJsonArray nodesJsonArray = sceneJson["nodes"].toArray();
+    for (const auto &nodeVal : nodesJsonArray) {
+        QJsonObject obj = nodeVal.toObject();
+        QJsonObject internalData = obj["internal-data"].toObject();
+
+        // check if data/function source model exists in the scene, to copy the files
+        QString fileName;
+        if (internalData.contains("data-name"))
+            fileName = internalData["data-name"].toString();
+        else if (internalData.contains("saved_function"))
+            fileName = internalData["saved_function"].toString();
+
+        if (!fileName.isEmpty()) {
+            QString srcPath = sourceDir.filePath(fileName);
+            QString targetPath = targetDir.filePath(fileName);
+
+            if (QFile::exists(srcPath) && !QFile::exists(targetPath)) {
+                QFile::copy(srcPath, targetPath);
+            }
+        }
     }
 }
 
