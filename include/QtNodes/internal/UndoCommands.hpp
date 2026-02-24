@@ -58,13 +58,13 @@ public:
 
     void undo() override;
     void redo() override;
-    void copyNodeDataFiles(const QJsonObject &sceneJson,
-                           const QDir &sourceDir,
-                           BasicGraphicsScene *scene);
 
 private:
     QJsonObject takeSceneJsonFromClipboard();
     QJsonObject makeNewNodeIdsInScene(QJsonObject const &sceneJson);
+    void copyNodeDataFiles(const QJsonObject &sceneJson,
+                           const QDir &sourceDir,
+                           BasicGraphicsScene *scene);
 
 private:
     BasicGraphicsScene *_scene;
