@@ -3,9 +3,10 @@
 #include "Definitions.hpp"
 #include "Export.hpp"
 
+#include <QDir>
+#include <QUndoCommand>
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointF>
-#include <QUndoCommand>
 
 #include <unordered_set>
 
@@ -61,11 +62,15 @@ public:
 private:
     QJsonObject takeSceneJsonFromClipboard();
     QJsonObject makeNewNodeIdsInScene(QJsonObject const &sceneJson);
+    void copyNodeDataFiles(const QJsonObject &sceneJson,
+                           const QDir &sourceDir,
+                           BasicGraphicsScene *scene);
 
 private:
     BasicGraphicsScene *_scene;
     QPointF const &_mouseScenePos;
     QJsonObject _newSceneJson;
+    QDir _sourceDataDir; // source data dir for paste operation
 };
 
 class NODE_EDITOR_PUBLIC DisconnectCommand : public QUndoCommand

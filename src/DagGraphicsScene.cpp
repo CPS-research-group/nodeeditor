@@ -202,4 +202,16 @@ void DagGraphicsScene::createNodeAt(const QString &name, const QPointF &pos)
     this->undoStack().push(new CreateCommand(this, name, pos));
 }
 
+QDir DagGraphicsScene::getDataDir() const
+{
+    if (_dataDir.exists())
+        return _dataDir;
+    return QDir();
+}
+
+void DagGraphicsScene::setDataDir(QDir const &dir)
+{
+    _dataDir = dir;
+}
+
 } // namespace QtNodes

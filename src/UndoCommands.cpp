@@ -3,6 +3,7 @@
 #include "BasicGraphicsScene.hpp"
 #include "ConnectionGraphicsObject.hpp"
 #include "ConnectionIdUtils.hpp"
+#include "DagGraphicsScene.hpp"
 #include "Definitions.hpp"
 #include "NodeGraphicsObject.hpp"
 
@@ -12,7 +13,6 @@
 #include <QtGui/QClipboard>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QGraphicsObject>
-
 
 namespace QtNodes {
 
@@ -240,10 +240,17 @@ CopyCommand::CopyCommand(BasicGraphicsScene *scene)
         setObsolete(true);
         return;
     }
+    // For copy-paste data: include the data path (sourceDir) in the scene
+    QJsonObject wrapper;
+    wrapper["scene"] = sceneJson;
+    if (auto dagScene = dynamic_cast<DagGraphicsScene *>(scene)) {
+        if (auto srcDir = dagScene->getDataDir(); srcDir.exists())
+            wrapper["sourceDir"] = srcDir.absolutePath();
+    }
 
     QClipboard *clipboard = QApplication::clipboard();
 
-    QByteArray const data = QJsonDocument(sceneJson).toJson();
+    QByteArray const data = QJsonDocument(wrapper).toJson();
 
     QMimeData *mimeData = new QMimeData();
     mimeData->setData("application/qt-nodes-graph", data);
@@ -263,7 +270,12 @@ PasteCommand::PasteCommand(BasicGraphicsScene *scene, QPointF const &mouseSceneP
     : _scene(scene)
     , _mouseScenePos(mouseScenePos)
 {
-    _newSceneJson = takeSceneJsonFromClipboard();
+    QJsonObject wrapper = takeSceneJsonFromClipboard();
+    // check if sourcDir key exists in wrapper
+    _sourceDataDir = QDir();
+    if (wrapper.contains("sourceDir"))
+        _sourceDataDir = QDir(wrapper["sourceDir"].toString());
+    _newSceneJson = wrapper["scene"].toObject();
 
     if (_newSceneJson.empty() || _newSceneJson["nodes"].toArray().empty()) {
         setObsolete(true);
@@ -288,6 +300,7 @@ void PasteCommand::redo()
 
     // Ignore if pasted in content does not generate nodes.
     try {
+        copyNodeDataFiles(_newSceneJson, _sourceDataDir, _scene);
         insertSerializedItems(_newSceneJson, _scene);
     } catch (...) {
         // If the paste does not work, delete all selected nodes and connections
@@ -302,6 +315,40 @@ void PasteCommand::redo()
         }
 
         setObsolete(true);
+    }
+}
+
+void PasteCommand::copyNodeDataFiles(const QJsonObject &sceneJson,
+                                     const QDir &sourceDir,
+                                     BasicGraphicsScene *scene)
+{
+    QDir targetDir;
+    if (auto dagScene = dynamic_cast<DagGraphicsScene *>(scene)) {
+        targetDir = dagScene->getDataDir();
+    }
+
+    QJsonArray nodesJsonArray = sceneJson["nodes"].toArray();
+    for (const auto &nodeVal : nodesJsonArray) {
+        QJsonObject obj = nodeVal.toObject();
+        QJsonObject internalData = obj["internal-data"].toObject();
+
+        // check if data/function source model exists in the scene, to copy the files
+        QString fileName;
+        if (internalData.contains("data-name"))
+            fileName = internalData["data-name"].toString();
+        else if (internalData.contains("saved_function"))
+            fileName = internalData["saved_function"].toString();
+
+        if (!fileName.isEmpty()) {
+            QString srcPath = sourceDir.filePath(fileName);
+            QString targetPath = targetDir.filePath(fileName);
+
+            if (QFile::exists(srcPath) && !QFile::exists(targetPath)) {
+                QFile::copy(srcPath, targetPath);
+            } else {
+                qWarning() << "Failed to copy file from" << srcPath << "to" << targetPath;
+            }
+        }
     }
 }
 

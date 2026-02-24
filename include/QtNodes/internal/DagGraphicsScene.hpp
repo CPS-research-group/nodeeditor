@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QFileInfo>
+#include <QDir>
 
 #include "BasicGraphicsScene.hpp"
 #include "DirectedAcyclicGraphModel.hpp"
@@ -23,6 +24,8 @@ public:
     QMenu *createSceneMenu(QPointF const scenePos) override;
     bool isEmpty() const { return _graphModel.isEmpty(); }
     bool isBlank() const { return _graphModel.isEmpty(); }
+    QDir getDataDir() const;
+    void setDataDir(QDir const &dir);
 
 public Q_SLOTS:
     bool save(const QString &filePath, const QJsonObject &metadata = {}) const;
@@ -34,6 +37,7 @@ Q_SIGNALS:
 
 private:
     DirectedAcyclicGraphModel &_graphModel;
+    QDir _dataDir; // store current tab's data dir
 };
 
 } // namespace QtNodes
