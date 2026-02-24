@@ -345,6 +345,8 @@ void PasteCommand::copyNodeDataFiles(const QJsonObject &sceneJson,
 
             if (QFile::exists(srcPath) && !QFile::exists(targetPath)) {
                 QFile::copy(srcPath, targetPath);
+            } else {
+                qWarning() << "Failed to copy file from" << srcPath << "to" << targetPath;
             }
         }
     }
